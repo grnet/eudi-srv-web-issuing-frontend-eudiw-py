@@ -15,7 +15,6 @@ from flask import (
     url_for,
     jsonify,
 )
-import segno
 
 from app_config.config_service import ConfService as cfgservice
 from app import oidc_metadata, openid_metadata

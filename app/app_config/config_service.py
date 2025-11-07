@@ -33,14 +33,9 @@ import os
 class ConfService:
     # ------------------------------------------------------------------------------------------------
     # Frontend service URL
-    # service_url = os.getenv("SERVICE_URL", "https://dev.issuer.eudiw.dev/")
-    service_url = "https://ec.dev.issuer.eudiw.dev"
+    service_url = os.getenv("SERVICE_URL", "https://ec.dev.issuer.eudiw.dev")
 
-    frontend_id = "5d725b3c-6d42-448e-8bfd-1eff1fcf152d"
-
-    wallet_test_url = os.getenv(
-        "WALLET_TEST_URL", "https://dev.tester.issuer.eudiw.dev/"
-    )
+    frontend_id = os.getenv("FRONTEND_ID","5d725b3c-6d42-448e-8bfd-1eff1fcf152d")
 
     issuer_url = os.getenv("ISSUER_URL", "https://dev.issuer.eudiw.dev")
 
@@ -74,7 +69,7 @@ class ConfService:
     # ------------------------------------------------------------------------------------------------
     # LOGS
 
-    log_dir = "/tmp/issuer_frontend/log_dev"
+    log_dir = os.getenv("LOG_DIR","/tmp/issuer_frontend/log_dev")
     # log_dir = "../../log"
     log_file_info = "logs.log"
 

@@ -31,6 +31,10 @@ import requests
 
 sys.path.append(os.path.dirname(__file__))
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from flask import Flask, jsonify, render_template, send_from_directory
 from flask_session import Session
 from flask_cors import CORS
