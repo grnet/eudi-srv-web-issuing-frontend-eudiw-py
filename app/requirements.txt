@@ -1,0 +1,14 @@
+Flask-Cors==4.0.0
+requests==2.31.0
+flask==2.3.3
+config==0.5.1
+flask_api==3.1
+validators==0.22.0
+jsonschema==4.21.1
+flask==2.3.3 
+werkzeug==2.3.7 
+pillow==10.2.0
+segno==1.6.1
+qrcode-artistic==3.0.2
+gunicorn
+Flask-Session==0.8.0
