@@ -1,0 +1,10 @@
+services:
+  issuer_frontend:
+    build: .
+    ports:
+      - "6007:5000"
+    volumes:
+      - /tmp/issuer_frontend/log_dev:/tmp/issuer_frontend/log_dev
+    env_file:
+      - .env
+    restart: unless-stopped
