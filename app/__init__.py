@@ -96,10 +96,10 @@ def setup_metadata():
             credentials_supported = data.get("credential_configurations_supported", {})
 
             if cfgserv.credentials_supported != "*":
-            allowed_credentials = set(c.strip() for c in cfgserv.credentials_supported.split(","))
-            credentials_supported = {
-                k: v for k, v in credentials_supported.items() if k in allowed_credentials
-            }
+                allowed_credentials = set(c.strip() for c in cfgserv.credentials_supported.split(","))
+                credentials_supported = {
+                    k: v for k, v in credentials_supported.items() if k in allowed_credentials
+                }
 
         except Exception:
             for file in os.listdir(
