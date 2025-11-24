@@ -130,16 +130,18 @@ def setup_metadata():
     oidc_metadata["credential_configurations_supported"] = credentials_supported
 
     old_domain = oidc_metadata["credential_issuer"]
-
     new_domain = cfgserv.issuer_url
 
+    oidc_domain = cfgserv.oauth_url
+
     openid_metadata = cast(
-        Dict[str, Any], replace_domain(openid_metadata, old_domain, new_domain)
+        Dict[str, Any], replace_domain(openid_metadata, f"{old_domain}/oidc", oidc_domain)
     )
+
     oauth_metadata = cast(
         Dict[str, Any], replace_domain(oauth_metadata, old_domain, new_domain)
     )
-
+    
     oidc_metadata = cast(
         Dict[str, Any], replace_domain(oidc_metadata, old_domain, new_domain)
     )
@@ -148,7 +150,7 @@ def setup_metadata():
     openid_metadata["issuer"] = cfgserv.service_url
     openid_metadata["pushed_authorization_request_endpoint"] = f"{cfgserv.service_url}/pushed_authorization"
     oidc_metadata["credential_issuer"] = cfgserv.service_url
-    oidc_metadata["display"]["logo"]["uri"] = f"{cfgserv.service_url}/ic-logo.png"
+    oidc_metadata["display"][0]["logo"]["uri"] = f"{cfgserv.service_url}/ic-logo.png"
 
 
 setup_metadata()
