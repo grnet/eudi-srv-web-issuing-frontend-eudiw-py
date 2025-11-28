@@ -335,12 +335,29 @@ def display_credential_offer():
             return jsonify({"status": "error", "message": "Invalid JSON payload"}), 400
 
         redirect_url = data_payload.get("redirect_url")
-        cred = data_payload.get("cred")
+        # cred = data_payload.get("cred")
         credential_offer_URI = data_payload.get("credential_offer_URI")
+
+        credentialsSupported = oidc_metadata["credential_configurations_supported"]
+
+        credentials = {"sd-jwt vc format": {}, "mdoc format": {}}
+
+        for cred in credentialsSupported:
+            credential = credentialsSupported[cred]
+
+            if credential["format"] == "dc+sd-jwt":
+                credentials["sd-jwt vc format"].update(
+                    {cred: credential["credential_metadata"]["display"][0]["name"]}
+                )
+
+            if credential["format"] == "mso_mdoc":
+                credentials["mdoc format"].update(
+                    {cred: credential["credential_metadata"]["display"][0]["name"]}
+                )
 
         return render_template(
             "openid/credential_offer.html",
-            cred=cred,
+            cred=credentials,
             redirect_url=redirect_url,
             credential_offer_URI=credential_offer_URI,
         )

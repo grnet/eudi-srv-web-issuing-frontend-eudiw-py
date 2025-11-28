@@ -54,9 +54,9 @@
     "HS512"
   ],
   "introspection_endpoint": "https://dev.issuer.eudiw.dev/oidc/introspection",
-  "issuer": "https://ec.dev.issuer.eudiw.dev",
+  "issuer": "https://dev.issuer.eudiw.dev",
   "jwks_uri": "https://dev.issuer.eudiw.dev/oidc/static/jwks.json",
-  "pushed_authorization_request_endpoint": "https://ec.dev.issuer.eudiw.dev/pushed_authorization",
+  "pushed_authorization_request_endpoint": "https://dev.issuer.eudiw.dev/pushed_authorization",
   "registration_endpoint": "https://dev.issuer.eudiw.dev/oidc/registration",
   "request_object_signing_alg_values_supported": [
     "RS256",
