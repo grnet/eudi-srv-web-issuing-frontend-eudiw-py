@@ -1,5 +1,5 @@
 {
-  "authorization_endpoint": "https://dev.issuer.eudiw.dev/oidc/authorization",
+  "authorization_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5601/authorization",
   "backchannel_logout_session_required": true,
   "backchannel_logout_supported": true,
   "claims_parameter_supported": true,
@@ -30,7 +30,7 @@
     "ES384",
     "ES512"
   ],
-  "end_session_endpoint": "https://dev.issuer.eudiw.dev/oidc/session",
+  "end_session_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5601/session",
   "frontchannel_logout_session_required": true,
   "frontchannel_logout_supported": true,
   "grant_types_supported": [
@@ -53,11 +53,11 @@
     "HS384",
     "HS512"
   ],
-  "introspection_endpoint": "https://dev.issuer.eudiw.dev/oidc/introspection",
-  "issuer": "https://dev.issuer.eudiw.dev",
-  "jwks_uri": "https://dev.issuer.eudiw.dev/oidc/static/jwks.json",
-  "pushed_authorization_request_endpoint": "https://dev.issuer.eudiw.dev/pushed_authorization",
-  "registration_endpoint": "https://dev.issuer.eudiw.dev/oidc/registration",
+  "introspection_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5601/introspection",
+  "issuer": "https://snf-74864.ok-kno.grnetcloud.net:5602",
+  "jwks_uri": "https://snf-74864.ok-kno.grnetcloud.net:5601/static/jwks.json",
+  "pushed_authorization_request_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5602/pushed_authorization",
+  "registration_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5601/registration",
   "request_object_signing_alg_values_supported": [
     "RS256",
     "RS384",
@@ -90,12 +90,12 @@
     "public",
     "pairwise"
   ],
-  "token_endpoint": "https://dev.issuer.eudiw.dev/oidc/token",
+  "token_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5601/token",
   "token_endpoint_auth_methods_supported": [
     "public",
     "attest_jwt_client_auth"
   ],
-  "userinfo_endpoint": "https://dev.issuer.eudiw.dev/oidc/userinfo",
+  "userinfo_endpoint": "https://snf-74864.ok-kno.grnetcloud.net:5601/userinfo",
   "userinfo_signing_alg_values_supported": [
     "RS256",
     "RS384",

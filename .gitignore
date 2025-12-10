@@ -203,7 +203,7 @@ app/tests/output.xml
 app/tests/report.html
 log
 
-frontend_config.yaml
+# frontend_config.yaml
 
 # Node.js / npm
 # =========================
