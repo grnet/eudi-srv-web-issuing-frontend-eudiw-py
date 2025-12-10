@@ -1,5 +1,5 @@
 {
-   "credential_issuer":"https://snf-74864.ok-kno.grnetcloud.net:5600",
+   "credential_issuer":"https://snf-74864.ok-kno.grnetcloud.net:5602",
    "credential_endpoint":"https://snf-74864.ok-kno.grnetcloud.net:5600/credential",
    "nonce_endpoint":"https://snf-74864.ok-kno.grnetcloud.net:5600/nonce",
    "deferred_credential_endpoint":"https://snf-74864.ok-kno.grnetcloud.net:5600/deferred_credential",
@@ -52,7 +52,7 @@
          "name":"Digital Credentials Issuer",
          "locale":"en",
          "logo":{
-            "uri":"https://snf-74864.ok-kno.grnetcloud.net:5600/ic-logo.png",
+            "uri":"https://snf-74864.ok-kno.grnetcloud.net:5602/ic-logo.png",
             "alt_text":"EU Digital Identity Wallet Logo"
          }
       }
