@@ -39,12 +39,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gettext-base \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=python-builder /install /usr/local
 COPY --from=node-builder /build/app/static/css/tailwind.css ./app/static/css/tailwind.css
 COPY . .
 
+# Renders the config template and repoints the metadata before starting the
+# app. See docker/entrypoint.sh.
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 ENV FLASK_APP=app
 
-EXPOSE 5000
+# The frontend listens on 5602, matching the deployed layout.
+EXPOSE 5602
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5602"]

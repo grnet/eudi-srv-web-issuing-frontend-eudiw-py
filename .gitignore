@@ -221,3 +221,7 @@ package-lock.json
 
 # Emacs backup files
 *~
+
+# Local development Docker stack. This service has no PKI of its own: it mounts
+# the CA volume created by the authorization server's pki/bootstrap.sh.
+.env

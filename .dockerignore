@@ -1,11 +1,38 @@
+## Build context exclusions: keep the image small, and keep key material and
+## deployment config out of it. Everything the container needs at runtime
+## arrives by bind mount or environment instead.
+
 .git
 .gitignore
-__pycache__
-*.pyc
-*.pyo
+.github
+
+**/__pycache__
+**/*.py[cod]
+*.egg-info
+.venv
+venv
 node_modules
+
+# Key material and deployment config
+*.pem
+*.key
+*.crt
+*.der
+*.p12
+frontend_config.yaml
+frontend_config.*.yaml
 .env
+.env.*
+!.env.example
+
+# Host-specific operational scripts: these drive the okeanos VM (certbot paths,
+# .config.hostname) and are meaningless in a container.
+run.sh
+setup.sh
+
 *.md
+!README.md
 tests/
-.pytest_cache
-node_modules
+.DS_Store
+.vscode
+.idea
