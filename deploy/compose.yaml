@@ -1,0 +1,42 @@
+# The issuer frontend. See deploy/README.md.
+#
+# Use deploy.sh or the Deploy workflow, not compose directly: the config is
+# rendered before compose runs.
+#
+# proxy-net belongs to eudi-srv-wallet-provider and must be up first.
+
+name: eudiw-frontend
+
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:?set by the deploy workflow}
+    container_name: eudiw-frontend
+    restart: unless-stopped
+    expose:
+      - "5000"
+    environment:
+      VIRTUAL_HOST: ${FRONTEND_HOST:?set in stack.env}
+      VIRTUAL_PORT: "5000"
+      VIRTUAL_PATH: ${FRONTEND_PATH:?set in stack.env}
+      # Strips the prefix: the app serves at its own root.
+      VIRTUAL_DEST: /
+      LETSENCRYPT_HOST: ${FRONTEND_HOST}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?set in stack.env}
+      # /app exists in the image; /etc/issuer_config does not, and compose
+      # writes config content into the container rather than creating parents.
+      ISSUER_CONFIG_PATH: /app/frontend_config.yaml
+    configs:
+      - source: frontend-config
+        target: /app/frontend_config.yaml
+    networks:
+      - proxy-net
+
+configs:
+  # Rendered from deploy/frontend_config.yaml.template.
+  frontend-config:
+    content: ${FRONTEND_CONFIG:?rendered by deploy.sh or the deploy workflow}
+
+networks:
+  proxy-net:
+    external: true
+    name: proxy-net

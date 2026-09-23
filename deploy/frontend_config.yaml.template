@@ -1,0 +1,53 @@
+# Template for frontend_config.yaml, rendered at deploy time.
+#
+# gfour's deploy-okeanos-v8 config with the deployment-specific URLs turned into
+# placeholders. deploy.sh and the Deploy workflow run envsubst over it and pass
+# the result to compose, which mounts it at /app/frontend_config.yaml.
+#
+# No secrets: the three URLs are public, and frontend_id is an identifier the
+# issuer already knows. This is why the file is committed, unlike the copy on
+# deploy-okeanos-v8 which was un-ignored to carry okeanos hostnames.
+#
+# backend_url and oauth_url are the public HTTPS URLs, not container names. This
+# stack is deliberately standalone: the frontend has no internal/external URL
+# pair the way the OIDC server does, so there is nothing to gain from sharing a
+# private network with the issuer.
+
+service_url: "${FRONTEND_PUBLIC_URL}"
+log_dir: "/tmp/logs/logs.log"
+
+frontend_id: "5d725b3c-6d42-448e-8bfd-1eff1fcf152d"
+
+backend_url: "${ISSUER_PUBLIC_URL}"
+oauth_url: "${OIDC_PUBLIC_URL}"
+
+credentials_supported:
+    - "org.iso.18013.5.1.reservation_mdoc"
+    - "eu.europa.ec.eudi.cor_mdoc"
+    - "eu.europa.ec.eudi.diploma_vc_sd_jwt"
+    - "eu.europa.ec.eudi.ehic_sd_jwt_vc"
+    - "eu.europa.ec.eudi.ehic_mdoc"
+    - "eu.europa.ec.eudi.employee_mdoc"
+    - "eu.europa.ec.eudi.hiid_sd_jwt_vc"
+    - "eu.europa.ec.eudi.hiid_mdoc"
+    - "eu.europa.ec.eudi.iban_sd_jwt_vc"
+    - "eu.europa.ec.eudi.iban_mdoc"
+    - "eu.europa.ec.eudi.loyalty_mdoc"
+    - "eu.europa.ec.eudi.mdl_mdoc"
+    - "eu.europa.ec.eudi.msisdn_sd_jwt_vc"
+    - "eu.europa.ec.eudi.msisdn_mdoc"
+    - "eu.europa.ec.eudi.pda1_sd_jwt_vc"
+    - "eu.europa.ec.eudi.pda1_mdoc"
+    - "eu.europa.ec.eudi.photoid"
+    - "eu.europa.ec.eudi.pid_vc_sd_jwt"
+    - "eu.europa.ec.eudi.pid_mdoc_deferred"
+    - "eu.europa.ec.eudi.pid_mdoc"
+    - "eu.europa.ec.eudi.por_sd_jwt_vc"
+    - "eu.europa.ec.eudi.por_mdoc"
+    - "eu.europa.ec.eudi.seafarer_mdoc"
+    - "eu.europa.ec.eudi.tax_sd_jwt_vc"
+    - "eu.europa.ec.eudi.tax_mdoc"
+    - "eu.europa.ec.eudi.tax_residency_vc_sd_jwt"
+    - "eu.europa.ec.eudi.learning_credential_vc_sd_jwt"
+    - "eu.europa.ec.eudi.aamva_mdl_mdoc"
+    - "org.iso.7367.2.1.mVC_mdoc"

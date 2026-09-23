@@ -1,0 +1,175 @@
+# Deploy to the EC2 box. Manual only, so a push never changes what is running.
+#
+# Drives the remote Docker daemon over SSH: DOCKER_HOST=ssh://target means the
+# runner's compose client controls the server's. The compose file and the
+# environment are read on the runner and never land on the box.
+#
+# Standalone stack: the frontend reaches the issuer and the OIDC server over
+# their public URLs, so it shares only proxy-net with them.
+#
+# The edge (nginx-proxy, acme-companion, proxy-net) belongs to
+# eudi-srv-wallet-provider and must be deployed first.
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: sha- tag of this commit)'
+        required: false
+        type: string
+      # Compose does not recreate a container when only a config's content
+      # changes. Tick this when the change is to stack.env or the config
+      # template rather than to the image.
+      force_recreate:
+        description: 'Recreate containers even if nothing changed'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      packages: read
+
+    env:
+      DOCKER_HOST: ssh://target
+      COMPOSE: docker compose -f deploy/compose.yaml -p eudiw-frontend
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - name: Resolve the image tag
+        id: image
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.image_tag }}"
+          [[ -n "$tag" ]] || tag="sha-${{ github.sha }}"
+          echo "image=${REGISTRY}/${IMAGE_NAME}:${tag}" >> "$GITHUB_OUTPUT"
+          echo "Deploying ${REGISTRY}/${IMAGE_NAME}:${tag}"
+
+      # Authenticated on the runner. The credentials are forwarded to the remote
+      # daemon for the pull, so the box needs no registry login of its own.
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # config and known_hosts are committed under deploy/ssh/: hostnames, ports
+      # and host keys are public data. Only the private key is a secret.
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SSH_KEY:-}" ]]; then
+            echo "::error::SSH_KEY is not set; see deploy/README.md"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          install -m 600 deploy/ssh/config ~/.ssh/config
+          install -m 644 deploy/ssh/known_hosts ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/eudiw-deploy
+          chmod 600 ~/.ssh/eudiw-deploy
+          ssh -o BatchMode=yes target 'echo "connected to $(hostname)"'
+
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          if docker network inspect proxy-net >/dev/null 2>&1; then
+            echo "ok   proxy-net exists"
+          else
+            echo "::error::proxy-net is missing. Deploy eudi-srv-wallet-provider first."
+            exit 1
+          fi
+
+      # Compose interpolates ${...} client-side, here on the runner, and sends
+      # the daemon an already-expanded spec. Nothing is written to the box.
+      - name: Pull and roll
+        env:
+          FRONTEND_IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          set -euo pipefail
+
+          set -a
+          . deploy/stack.env
+          set +a
+
+          FRONTEND_CONFIG=$(envsubst < deploy/frontend_config.yaml.template)
+          export FRONTEND_CONFIG
+          if printf '%s' "$FRONTEND_CONFIG" | grep -q '\${'; then
+            echo "::error::unsubstituted variables remain in the frontend config"
+            printf '%s' "$FRONTEND_CONFIG" | grep -n '\${'
+            exit 1
+          fi
+
+          export COMPOSE_ENV_FILES=deploy/stack.env
+
+          recreate=""
+          [[ "${{ inputs.force_recreate }}" == "true" ]] && recreate="--force-recreate"
+
+          $COMPOSE pull
+          $COMPOSE up -d --remove-orphans $recreate
+
+      - name: Verify
+        run: |
+          set -uo pipefail
+          fail=0
+
+          state=""
+          for _ in $(seq 1 18); do
+            state=$(docker inspect -f '{{.State.Status}}' eudiw-frontend 2>/dev/null || echo absent)
+            [[ "$state" == "running" ]] && break
+            sleep 5
+          done
+          if [[ "$state" == "running" ]]; then
+            echo "  ok   eudiw-frontend"
+          else
+            echo "  FAIL eudiw-frontend ($state)"
+            docker logs --tail 30 eudiw-frontend 2>&1 | sed 's/^/       /' || true
+            fail=1
+          fi
+
+          host=$(grep -E '^FRONTEND_HOST=' deploy/stack.env | cut -d= -f2)
+          check() {
+            code=$(docker run --rm --network proxy-net curlimages/curl:8.11.1 \
+                     -s -o /dev/null -w '%{http_code}' --max-time 10 \
+                     -H "Host: $host" "http://nginx-proxy$1" || echo 000)
+            if [[ "$code" == "$2" ]]; then
+              echo "  ok   $1 returned $code"
+            else
+              echo "  FAIL $1 returned $code, expected $2"
+              fail=1
+            fi
+          }
+
+          # 301 because the proxy redirects http to https once a certificate
+          # exists; it proves the vhost matched.
+          check /frontend/ 301
+          # Must not have shadowed what was already on this hostname.
+          check /issuer/.well-known/openid-credential-issuer 301
+          check /wallet-provider/jwks 301
+
+          [[ "$fail" -eq 0 ]] && echo "deploy verified" || { echo "verification failed"; exit 1; }
+
+      - name: Clean up
+        if: always()
+        run: docker image prune -f || true
