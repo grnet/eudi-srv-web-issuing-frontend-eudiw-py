@@ -52,7 +52,7 @@ committed.
     VIRTUAL_DEST=/
 
 `/frontend/` on the shared hostname, alongside `/` (status list),
-`/wallet-provider/`, `/issuer/` and `/auth/`. `VIRTUAL_DEST=/` strips the prefix,
+`/wallet-provider/`, `/issuer/` and `/issuer/oidc/`. `VIRTUAL_DEST=/` strips the prefix,
 so the app serves at its own root and is unaware of it.
 
 ### url_for() is not enough: the app needs SCRIPT_NAME
@@ -105,6 +105,15 @@ That means RFC 8414 applies to it as it does to the issuer and the OIDC server: 
 client asking about `https://host/frontend` fetches
 `https://host/.well-known/openid-credential-issuer/frontend`, which lands at the
 host root where the status list is.
+
+It is also **its own authorization server**, as upstream designed it: its
+credential issuer metadata has no `authorization_servers`, and its AS metadata
+says `issuer = https://host/frontend`, with PAR served here and authorization
+and token delegated to the OIDC server at `/issuer/oidc/`. So a wallet also
+fetches `https://host/.well-known/oauth-authorization-server/frontend`, and the
+rule covers that and `openid-configuration` too. Until 2026-09-24 it covered
+only `openid-credential-issuer`, and that fetch was a 404. `deploy.sh` checks
+it, and that the metadata names the frontend as its issuer.
 
 The rule lives in `eudi-srv-wallet-provider`'s deploy compose, mounted at
 `/etc/nginx/vhost.d/demo.eudiw.grnet.gr`, and proxies to
