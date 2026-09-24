@@ -55,8 +55,44 @@ committed.
 `/wallet-provider/`, `/issuer/` and `/auth/`. `VIRTUAL_DEST=/` strips the prefix,
 so the app serves at its own root and is unaware of it.
 
-All 15 templates use `url_for()` rather than hardcoded paths, so assets resolve
-correctly behind the prefix.
+### url_for() is not enough: the app needs SCRIPT_NAME
+
+An earlier version of this file said the templates use `url_for()` and therefore
+"assets resolve correctly behind the prefix". The premise is right and the
+conclusion is wrong, and the page was broken in production until 2026-09-24.
+
+`url_for('static', ...)` appears 140 times and nothing is hardcoded, which is
+correct Flask. But `url_for` builds URLs from the WSGI `SCRIPT_NAME`, and
+nothing sets it: `VIRTUAL_DEST=/` strips the prefix before the request arrives,
+so the app genuinely believes it is at the root. The URLs come out absolute:
+
+    href="/static/bootstrap-3.4.1-dist/css/bootstrap.min.css"      404
+    href="/frontend/static/bootstrap-3.4.1-dist/css/bootstrap.min.css"  200
+
+The browser drops the prefix and the request lands on whatever owns the host
+root, which here is the status list. **The page returns 200 and renders
+unstyled**, with every stylesheet, script and image 404ing in the console. There
+is no HTTP status that shows this.
+
+Verified there is no configuration-only fix on this side: nginx-proxy sends no
+`SCRIPT_NAME`, and this app ignores an `X-Script-Name` header, tested against
+the running container.
+
+**Worked around in the proxy**, in `eudi-srv-wallet-provider`'s compose, as a
+per-path location config keyed on `sha1("/frontend/")`:
+
+    sub_filter 'href="/static/' 'href="/frontend/static/';
+    sub_filter 'src="/static/'  'src="/frontend/static/';
+
+so that this repository carries no deployment-specific change. Changing
+`FRONTEND_PATH` means changing that config and its filename hash too.
+
+The proper fix is `ProxyFix` or an explicit `SCRIPT_NAME` in the WSGI stack,
+which would make the app prefix-aware and let the rewrite go. That is upstream
+work: their app cannot currently be served under a path at all.
+
+Checked at the same time: `/issuer/` and `/auth/` do **not** have this problem.
+Neither emits a single absolute `/static/` reference.
 
 ### It needs the discovery rewrite too
 
