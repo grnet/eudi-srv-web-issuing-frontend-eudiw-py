@@ -49,5 +49,4 @@ credentials_supported:
     - "eu.europa.ec.eudi.tax_mdoc"
     - "eu.europa.ec.eudi.tax_residency_vc_sd_jwt"
     - "eu.europa.ec.eudi.learning_credential_vc_sd_jwt"
-    - "eu.europa.ec.eudi.aamva_mdl_mdoc"
     - "org.iso.7367.2.1.mVC_mdoc"
