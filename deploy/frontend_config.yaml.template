@@ -1,7 +1,7 @@
 # Template for frontend_config.yaml, rendered at deploy time.
 #
 # gfour's deploy-okeanos-v8 config with the deployment-specific URLs turned into
-# placeholders. deploy.sh and the Deploy workflow run envsubst over it and pass
+# placeholders. The Deploy workflow runs envsubst over it and passes
 # the result to compose, which mounts it at /app/frontend_config.yaml.
 #
 # No secrets: the three URLs are public, and frontend_id is an identifier the

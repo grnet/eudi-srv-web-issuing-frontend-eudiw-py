@@ -112,8 +112,7 @@ says `issuer = https://host/frontend`, with PAR served here and authorization
 and token delegated to the OIDC server at `/issuer/oidc/`. So a wallet also
 fetches `https://host/.well-known/oauth-authorization-server/frontend`, and the
 rule covers that and `openid-configuration` too. Until 2026-09-24 it covered
-only `openid-credential-issuer`, and that fetch was a 404. `deploy.sh` checks
-it, and that the metadata names the frontend as its issuer.
+only `openid-credential-issuer`, and that fetch was a 404.
 
 The rule lives in `eudi-srv-wallet-provider`'s deploy compose, mounted at
 `/etc/nginx/vhost.d/demo.eudiw.grnet.gr`, and proxies to
@@ -133,18 +132,12 @@ compose, which mounts it at `/app/frontend_config.yaml`.
 container at create time and does not create parent directories, so the
 destination has to exist in the image.
 
-## Deploying by hand
-
-`workflow_dispatch` only registers once the workflow file is on the default
-branch, so until this merges use `./deploy.sh` (untracked).
-
-    ./deploy.sh              sha- tag of HEAD
-    ./deploy.sh <tag>        a specific tag
-    RECREATE=1 ./deploy.sh   after a config-only change
+## Config changes need a recreate
 
 Compose does not recreate a container when only a config's content changes, so a
 change to `stack.env` or the template deploys without taking effect until the
-container is recreated.
+container is recreated. In the Deploy workflow, tick **Recreate containers even
+if nothing changed**.
 
 ## Still to sort
 

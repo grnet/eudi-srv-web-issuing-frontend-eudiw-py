@@ -1,7 +1,7 @@
 # The issuer frontend. See deploy/README.md.
 #
-# Use deploy.sh or the Deploy workflow, not compose directly: the config is
-# rendered before compose runs.
+# Use the Deploy workflow, not compose directly: the config is rendered
+# before compose runs.
 #
 # proxy-net belongs to eudi-srv-wallet-provider and must be up first.
 
@@ -34,7 +34,7 @@ services:
 configs:
   # Rendered from deploy/frontend_config.yaml.template.
   frontend-config:
-    content: ${FRONTEND_CONFIG:?rendered by deploy.sh or the deploy workflow}
+    content: ${FRONTEND_CONFIG:?rendered by the deploy workflow}
 
 networks:
   proxy-net:
