@@ -72,6 +72,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Fail early, with a reason, if the image is not in the registry yet.
+      - name: Check the image is built
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          set -uo pipefail
+          if err=$(docker buildx imagetools inspect "$IMAGE" 2>&1 >/dev/null); then
+            echo "found $IMAGE"
+          elif grep -q 'not found' <<<"$err"; then
+            echo "::error::$IMAGE is not in the registry. Wait for its Docker build to finish, or pass an image tag that exists."
+            exit 1
+          else
+            echo "$err"
+            echo "::error::could not look up $IMAGE"
+            exit 1
+          fi
+
       # config and known_hosts are committed under deploy/ssh/: hostnames, ports
       # and host keys are public data. Only the private key is a secret.
       - name: Configure SSH
@@ -149,10 +166,19 @@ jobs:
           fi
 
           host=$(grep -E '^FRONTEND_HOST=' deploy/stack.env | cut -d= -f2)
+          # Over https: port 80 answers almost everything with a 301, so a 301
+          # proves nothing about routing. --connect-to keeps the edge hostname
+          # for SNI, so the certificate is checked too. Retried, because the app
+          # takes a moment to answer after `up -d`.
           check() {
-            code=$(docker run --rm --network proxy-net curlimages/curl:8.11.1 \
-                     -s -o /dev/null -w '%{http_code}' --max-time 10 \
-                     -H "Host: $host" "http://nginx-proxy$1" || echo 000)
+            for _ in $(seq 1 12); do
+              code=$(docker run --rm --network proxy-net curlimages/curl:8.11.1 \
+                       -s -o /dev/null -w '%{http_code}' --max-time 10 \
+                       --connect-to "$host:443:nginx-proxy:443" \
+                       "https://$host$1" || echo 000)
+              [[ "$code" == "$2" ]] && break
+              sleep 5
+            done
             if [[ "$code" == "$2" ]]; then
               echo "  ok   $1 returned $code"
             else
@@ -161,12 +187,10 @@ jobs:
             fi
           }
 
-          # 301 because the proxy redirects http to https once a certificate
-          # exists; it proves the vhost matched.
-          check /frontend/ 301
+          check /frontend/ 200
           # Must not have shadowed what was already on this hostname.
-          check /issuer/.well-known/openid-credential-issuer 301
-          check /wallet-provider/jwks 301
+          check /issuer/.well-known/openid-credential-issuer 200
+          check /wallet-provider/jwks 200
 
           [[ "$fail" -eq 0 ]] && echo "deploy verified" || { echo "verification failed"; exit 1; }
 

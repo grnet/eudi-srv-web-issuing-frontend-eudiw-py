@@ -146,4 +146,4 @@ if nothing changed**.
 - `e1799bb` on `deploy-okeanos-v8` swaps the `credential_request_encryption`
   public JWK for a GRNET one. Not carried: the matching private key is not in
   this repository, and advertising a key nobody holds is worse than advertising
-  the reference one. See `TODO.md`.
+  the reference one.
