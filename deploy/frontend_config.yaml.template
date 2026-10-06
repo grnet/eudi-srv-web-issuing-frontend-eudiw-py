@@ -50,3 +50,6 @@ credentials_supported:
     - "eu.europa.ec.eudi.tax_residency_vc_sd_jwt"
     - "eu.europa.ec.eudi.learning_credential_vc_sd_jwt"
     - "org.iso.7367.2.1.mVC_mdoc"
+    # WE BUILD SCA attestations, for the PA2 payment demo
+    - "eu.webuildconsortium.sca.user_mdoc"
+    - "eu.webuildconsortium.sca.card_dpc_sd_jwt"
