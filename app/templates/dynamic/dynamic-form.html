@@ -29,8 +29,26 @@
     {% set current_name = name_prefix + ('[{}]'.format(name) if name_prefix else name) %}
 
 
+    {# Payment card choice: one radio button per card, shown by its card art #}
+    {% if attr.type == 'card_choice' %}
+    <fieldset class="mb-4">
+        <legend class="block text-sm font-medium text-gray-700 mb-2">{{ name | replace('_', ' ') | title }}</legend>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for option in attr.options %}
+            <label class="cursor-pointer">
+                <input type="radio" name="{{ current_name }}" value="{{ option.value }}" class="sr-only peer"
+                    {% if loop.first %}checked{% endif %} required>
+                <div class="rounded-xl border-2 border-gray-200 p-3 peer-checked:border-indigo-600 peer-checked:ring-2 peer-checked:ring-indigo-200">
+                    <img src="{{ option.image_url }}" alt="{{ option.label }}" class="w-full rounded-lg">
+                    <div class="mt-2 text-center font-semibold text-gray-800">{{ option.label }}</div>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+    </fieldset>
+
     {# Dropdown Select Menu #}
-    {% if attr.options is defined and attr.options %}
+    {% elif attr.options is defined and attr.options %}
     <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ name | replace('_', ' ') | title }}</label>
         <select name="{{ current_name }}"
