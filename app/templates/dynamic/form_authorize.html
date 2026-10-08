@@ -32,116 +32,155 @@
     <title>Confirm data from your EUDI Wallet</title>
 </head>
 
+{% from "dynamic/_payment_card.html" import card_visual %}
+
 {# ===================================================================== #}
-{# recursive macro for nested attributes #}
+{# recursive macro for nested attributes, one row of a <dl> each #}
 {# ===================================================================== #}
 {% macro render_attribute_display(name, value) %}
 
 {# It's a nested dictionary (like place_of_birth) #}
 {% if value is mapping %}
-<div class="attribute-block">
-    <label class="font-pf block font-bold text-custom-gray">{{ name | replace('_', ' ') | title }}</label>
-    <div class="mt-2 pl-4 border-l-2 border-gray-400 space-y-3">
-        {% for sub_name, sub_value in value.items() %}
-            {{ render_attribute_display(sub_name, sub_value) }}
-        {% endfor %}
-    </div>
+<div class="attribute-block py-3">
+    <dt class="text-sm text-gray-500">{{ name | replace('_', ' ') | title }}</dt>
+    <dd class="mt-1 pl-3 border-l-2 border-gray-200">
+        <dl class="divide-y divide-gray-100">
+            {% for sub_name, sub_value in value.items() %}
+                {{ render_attribute_display(sub_name, sub_value) }}
+            {% endfor %}
+        </dl>
+    </dd>
 </div>
 
 {# It's a list of items (like nationalities, driving_privileges) #}
 {% elif value is sequence and value is not string %}
-<div class="attribute-block">
-    <label class="font-pf block font-bold text-custom-gray">{{ name | replace('_', ' ') | title }}</label>
-    <div class="mt-2 pl-4 border-l-2 border-gray-400 space-y-3">
+<div class="attribute-block py-3">
+    <dt class="text-sm text-gray-500">{{ name | replace('_', ' ') | title }}</dt>
+    <dd class="mt-2 space-y-2">
         {% for item in value %}
-        <div class="bg-white/60 p-3 rounded-md">
+        <div class="rounded-lg bg-gray-50 px-3">
             {% if item is mapping %}
+            <dl class="divide-y divide-gray-100">
                 {% for sub_name, sub_value in item.items() %}
                     {{ render_attribute_display(sub_name, sub_value) }}
                 {% endfor %}
+            </dl>
             {% else %}
-                <p class="font-pf text-base text-custom-gray">{{ item }}</p>
+            <p class="py-2 text-base text-gray-900">{{ item }}</p>
             {% endif %}
         </div>
         {% endfor %}
-    </div>
+    </dd>
 </div>
 
 {# It's an image #}
 {% elif name in ["portrait", "issuing_authority_logo", "signature_usual_mark_issuing_officer", "image"] %}
-<div class="attribute-block">
-    <label class="block text-base font-bold text-custom-gray">{{ name | title }}</label>
-    <img class="mt-1 rounded-lg shadow-md w-32 h-32 object-cover" src="data:image/jpeg;base64,{{ value }}">
+<div class="attribute-block py-3">
+    <dt class="text-sm text-gray-500">{{ name | replace('_', ' ') | title }}</dt>
+    <dd><img class="mt-2 rounded-lg shadow-md w-32 h-32 object-cover" src="data:image/jpeg;base64,{{ value }}"
+            alt="{{ name | replace('_', ' ') | title }}"></dd>
 </div>
 
 {# It's a simple value (string, number, etc.) #}
 {% else %}
-<div class="attribute-block">
-    <label class="font-pf block font-bold text-custom-gray">{{ name | replace('_', ' ') | title }}</label>
-    <p class="font-pf text-base text-custom-gray mt-1">{{ value }}</p>
+<div class="attribute-block py-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <dt class="text-sm text-gray-500">{{ name | replace('_', ' ') | title }}</dt>
+    <dd class="text-base font-medium text-gray-900 text-right break-words">{{ value }}</dd>
 </div>
 {% endif %}
 {% endmacro %}
 
 
-<body class="bg-white">
-    <div role="main" class="mx-auto w-full max-w-screen-md p-6 flex flex-col min-h-screen">
+<body class="bg-gray-50 font-sans">
+    <div role="main" class="mx-auto w-full max-w-screen-md p-3 sm:p-6 flex flex-col min-h-screen">
+        <div class="w-full flex flex-col flex-grow bg-white p-5 sm:p-8 rounded-xl shadow-lg">
 
-        <!-- Header Section  -->
-        <div class="space-y-2 mb-8">
-            <p class="text-sm font-semibold uppercase tracking-wider text-gray-500">Test Issuer</p>
-            <h1 class="font-pf text-4xl font-bold text-gray-800">Review & Send</h1>
-            <p class="font-pf text-base text-gray-600">
-                Please review the selected attributes before sending to the EudiWallet demo app.
-            </p>
-        </div>
+            <!-- Header Section  -->
+            <div class="space-y-2 mb-6">
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Test Issuer</p>
+                <h1 class="font-pf text-4xl text-gray-800">Review & Send</h1>
+                <p class="font-pf text-sm text-gray-700 leading-snug">
+                    Check the details below, then authorize to send them to your <strong>EUDI Wallet</strong>.
+                </p>
+            </div>
 
-        <!-- The Form -->
-        <form id="authForm" method="post" action="{{redirect_url}}" class="flex-grow flex flex-col">
+            <!-- The Form -->
+            <form id="authForm" method="post" action="{{redirect_url}}" class="flex-grow flex flex-col"
+                onsubmit="return submitOnce()">
 
-            <div class="flex-grow">
-                <!-- The Inset Data Card -->
-                <div class="bg-gray-200 rounded-xl p-6">
-                    <div class="space-y-5">
-
-                        {# ===================================================================== #}
-                        {# It now uses the macro to correctly render all data structures. #}
-                        {# ===================================================================== #}
-                        {% for category_name, attributes in presentation_data.items() %}
-                        {# Display a title for each credential type #}
-                        <h2 class="text-2xl font-pf font-bold text-gray-900 pb-2 mb-3 border-b border-gray-400/50">
+                <div class="space-y-4">
+                    {% for category_name, attributes in presentation_data.items() %}
+                    {# The card a payment credential is for, when there is one #}
+                    {% set card = attributes.get('card_display') %}
+                    <section class="rounded-xl border border-gray-200 overflow-hidden">
+                        <h2 class="px-4 sm:px-5 py-3 bg-gray-50 border-b border-gray-200 text-base font-semibold text-gray-900">
                             {{ category_name }}
                         </h2>
-                        {# Loop through attributes and let the macro handle the display logic #}
-                        {% for name, value in attributes.items() %}
-                        {{ render_attribute_display(name, value) }}
-                        {% endfor %}
-                        {% endfor %}
 
+                        {% if card %}
+                        {% set art = card.card_art | selectattr('theme', 'equalto', 'DEFAULT') | first | default(card.card_art[0]) %}
+                        <div class="px-4 sm:px-5 pt-5">
+                            <div class="mx-auto max-w-xs">
+                                {{ card_visual(art.image_url, card.alias, card.last_four, card.expiry) }}
+                            </div>
+                            <p class="mt-3 text-center font-semibold text-gray-900">{{ card.alias }}</p>
+                            <p class="text-center text-sm text-gray-500">
+                                {% if card.type and card.type.label %}{{ card.type.label }} · {% endif %}•••• {{ card.last_four }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <dl class="px-4 sm:px-5 py-1 divide-y divide-gray-100 {% if card %}mt-4 border-t border-gray-100{% endif %}">
+                            {% if card and card.network_branding %}
+                            {{ render_attribute_display('payment_network', card.network_branding.branding.name) }}
+                            {% endif %}
+                            {% for name, value in attributes.items() if name != 'card_display' %}
+                            {{ render_attribute_display(name, value) }}
+                            {% endfor %}
+                        </dl>
+                    </section>
+                    {% endfor %}
+                </div>
+
+                <!-- Hidden user_id input-->
+                <input type="hidden" value="{{ user_id }}" name="user_id">
+
+                <!-- Action Buttons -->
+                <div class="mt-auto pt-8">
+                    <div class="flex flex-col gap-3">
+                        <button type="submit" name="proceed"
+                            class="w-full bg-blue-900 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition-colors duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 aria-busy:opacity-70 aria-busy:cursor-wait">
+                            Authorize and send to wallet
+                        </button>
+                        <button type="button" name="Cancelled"
+                            class="w-full border border-gray-300 bg-white text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-200"
+                            onclick="window.history.back();">
+                            Cancel
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Hidden user_id input-->
-            <input type="hidden" value="{{ user_id }}" name="user_id">
-
-            <!-- Action Buttons -->
-            <div class="mt-auto pt-8">
-                <div class="flex flex-col gap-2 items-center">
-                    <button type="submit" name="proceed"
-                        class="w-full bg-blue-900 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition-colors">
-                        Authorize
-                    </button>
-                    <button type="button" name="Cancelled"
-                        class="w-full border-gray-400 text-gray-500 font-semibold py-2 rounded-lg"
-                        onclick="window.history.back();">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-
-        </form>
+            </form>
+        </div>
     </div>
+
+    <script>
+        // Submit once. The button stays enabled, so its name is still sent.
+        function submitOnce() {
+            const form = document.getElementById('authForm');
+            if (form.dataset.submitting) return false;
+            form.dataset.submitting = 'true';
+            form.querySelector('button[type="submit"]').setAttribute('aria-busy', 'true');
+            return true;
+        }
+
+        // A page restored by the Back button can be submitted again.
+        window.addEventListener('pageshow', function () {
+            const form = document.getElementById('authForm');
+            delete form.dataset.submitting;
+            form.querySelector('button[type="submit"]').removeAttribute('aria-busy');
+        });
+    </script>
 </body>
 
 </html>

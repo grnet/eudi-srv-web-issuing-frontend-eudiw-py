@@ -21,6 +21,8 @@
 
 </head>
 
+{% from "dynamic/_payment_card.html" import card_visual %}
+
 {# =================================================================================== #}
 {# RECURSIVE MACRO TO RENDER FORM ATTRIBUTES #}
 {# =================================================================================== #}
@@ -32,31 +34,22 @@
     {# Payment card choice: one radio button per card, shown by its card art #}
     {% if attr.type == 'card_choice' %}
     <fieldset class="mb-4">
-        <legend class="block text-sm font-medium text-gray-700 mb-2">{{ name | replace('_', ' ') | title }}</legend>
+        <legend class="block text-base font-semibold text-gray-800">Choose your card</legend>
+        <p class="text-sm text-gray-500 mb-3">The credential will be issued for the card you choose.</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {% for option in attr.options %}
-            <label class="cursor-pointer">
+            <label class="group cursor-pointer">
                 <input type="radio" name="{{ current_name }}" value="{{ option.value }}" class="sr-only peer"
                     {% if loop.first %}checked{% endif %} required>
-                <div class="rounded-xl border-2 border-gray-200 p-3 peer-checked:border-indigo-600 peer-checked:ring-2 peer-checked:ring-indigo-200">
-                    {# The card's last four digits and expiry, over its card art. Sized to the card's width. #}
-                    <div class="relative" style="container-type: inline-size;">
-                        <img src="{{ option.image_url }}" alt="{{ option.label }}" class="w-full rounded-lg">
-                        {% if option.last_four %}
-                        <div class="absolute text-white font-mono" aria-hidden="true"
-                            style="left: 8%; top: 51%; font-size: 6.2cqw; letter-spacing: 0.04em; text-shadow: 0 1px 2px rgba(0,0,0,.5); white-space: nowrap;">
-                            •••• •••• •••• {{ option.last_four }}
-                        </div>
-                        {% endif %}
-                        {% if option.expiry %}
-                        <div class="absolute text-white" aria-hidden="true"
-                            style="left: 8%; top: 72%; text-shadow: 0 1px 2px rgba(0,0,0,.5);">
-                            <div style="font-size: 2.6cqw; letter-spacing: 0.08em; opacity: .8;">EXPIRY DATE</div>
-                            <div class="font-mono" style="font-size: 4.6cqw;">{{ option.expiry }}</div>
-                        </div>
-                        {% endif %}
+                <div class="rounded-xl border-2 border-gray-200 p-3 transition-colors hover:border-gray-300 peer-checked:border-indigo-600 peer-checked:ring-2 peer-checked:ring-indigo-200 peer-focus-visible:ring-4 peer-focus-visible:ring-indigo-300">
+                    {{ card_visual(option.image_url, option.label, option.last_four, option.expiry) }}
+                    {# A radio indicator, so the choice is not shown by colour alone #}
+                    <div class="mt-2 flex items-center justify-center gap-2">
+                        <span class="flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-gray-300 group-has-[:checked]:border-indigo-600" aria-hidden="true">
+                            <span class="hidden h-2.5 w-2.5 rounded-full bg-indigo-600 group-has-[:checked]:block"></span>
+                        </span>
+                        <span class="font-semibold text-gray-800">{{ option.label }}</span>
                     </div>
-                    <div class="mt-2 text-center font-semibold text-gray-800">{{ option.label }}</div>
                 </div>
             </label>
             {% endfor %}
@@ -274,9 +267,8 @@
 
 
 <body class="bg-gray-50 font-sans">
-    <div role="main" class="mx-auto w-full max-w-screen-md p-6 flex flex-col min-h-screen">
-        <div id="content" class="w-full flex flex-col bg-white p-8 rounded-xl shadow-lg"
-            style="min-height: calc(100vh - 25vh);">
+    <div role="main" class="mx-auto w-full max-w-screen-md p-3 sm:p-6 flex flex-col min-h-screen">
+        <div id="content" class="w-full flex flex-col flex-grow bg-white p-5 sm:p-8 rounded-xl shadow-lg">
             <div class="space-y-2 mb-6">
                 <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Test Issuer</p>
                 <h1 class="font-pf text-4xl text-gray-800">EUDI Wallet Credential</h1>
@@ -285,9 +277,9 @@
                 <p class="text-sm italic text-gray-500">For testing purposes only.</p>
             </div>
 
-            <form id="selectCountryForm" method="post" class="flex flex-col h-full" action="{{redirect_url}}"
+            <form id="selectCountryForm" method="post" class="flex flex-col flex-grow" action="{{redirect_url}}"
                 onsubmit="return submitValidation()" enctype="multipart/form-data">
-                <div class="mt-10">
+                <div class="mt-4 sm:mt-8">
                     <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-6">Mandatory Information</h2>
                     {% for name, attr in mandatory_attributes.items() %}
                     {{ render_attribute(name, attr, is_optional=false) }}
@@ -305,14 +297,14 @@
                 </div>
                 {% endif %}
 
-                <div class="mt-auto py-10">
-                    <div class="flex flex-col gap-1 items-center">
+                <div class="mt-auto pt-8">
+                    <div class="flex flex-col gap-3">
                         <button type="submit" name="proceed"
-                            class="w-full bg-blue-900 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition-colors duration-200">
-                            Confirm
+                            class="w-full bg-blue-900 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition-colors duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 aria-busy:opacity-70 aria-busy:cursor-wait">
+                            Continue
                         </button>
                         <button type="button" name="Cancelled"
-                            class="w-full border-gray-400 text-gray-500 font-semibold py-2 rounded-lg"
+                            class="w-full border border-gray-300 bg-white text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-200"
                             onclick="window.history.back();">
                             Cancel
                         </button>
@@ -609,8 +601,21 @@
                     }
                 }
             }
+
+            // Submit once. The button stays enabled, as the backend expects its name ("proceed").
+            const form = document.getElementById('selectCountryForm');
+            if (form.dataset.submitting) return false;
+            form.dataset.submitting = 'true';
+            form.querySelector('button[type="submit"]').setAttribute('aria-busy', 'true');
             return true;
         }
+
+        // A page restored by the Back button can be submitted again.
+        window.addEventListener('pageshow', function () {
+            const form = document.getElementById('selectCountryForm');
+            delete form.dataset.submitting;
+            form.querySelector('button[type="submit"]').removeAttribute('aria-busy');
+        });
 
         // Make functions globally accessible for inline event handlers
         window.submitValidation = submitValidation;

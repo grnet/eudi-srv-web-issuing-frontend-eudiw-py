@@ -1,0 +1,19 @@
+{# The card art of a payment card, with its last four digits and expiry over it. Sized to the card's width. #}
+{% macro card_visual(image_url, alt, last_four=none, expiry=none) %}
+<div class="relative" style="container-type: inline-size;">
+    <img src="{{ image_url }}" alt="{{ alt }}" class="w-full rounded-lg">
+    {% if last_four %}
+    <div class="absolute text-white font-mono" aria-hidden="true"
+        style="left: 8%; top: 51%; font-size: 6.2cqw; letter-spacing: 0.04em; text-shadow: 0 1px 2px rgba(0,0,0,.5); white-space: nowrap;">
+        •••• •••• •••• {{ last_four }}
+    </div>
+    {% endif %}
+    {% if expiry %}
+    <div class="absolute text-white" aria-hidden="true"
+        style="left: 8%; top: 72%; text-shadow: 0 1px 2px rgba(0,0,0,.5);">
+        <div style="font-size: 2.6cqw; letter-spacing: 0.08em; opacity: .8;">EXPIRY DATE</div>
+        <div class="font-mono" style="font-size: 4.6cqw;">{{ expiry }}</div>
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
