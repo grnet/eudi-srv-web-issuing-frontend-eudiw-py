@@ -17,6 +17,7 @@
 
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}" />
     <link href="{{ url_for('static', filename='css/tailwind.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/grnet.css') }}" rel="stylesheet">
     <script type="text/javascript" id="jqueryId"
         src="{{ url_for('static', filename='scripts/jquery/jquery-3.6.3.min.js') }}" charset="UTF-8"></script>
 
@@ -96,8 +97,12 @@
         <div class="w-full flex flex-col flex-grow bg-white p-5 sm:p-8 rounded-xl shadow-lg">
 
             <!-- Header Section  -->
+            <div class="grnet-brand mb-6">
+                <img src="{{url_for('static', filename='ic-logo.svg')}}" alt="EU Digital Identity Wallet" width="123" height="40">
+                <img src="{{url_for('static', filename='logo_govgr_beta_pos.svg')}}" alt="gov.gr beta" width="173" height="52">
+            </div>
             <div class="space-y-2 mb-6">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">Test Issuer</p>
+                <p class="text-xs uppercase tracking-wide text-gray-500 font-semibold">gov.gr BETA Demo Issuer</p>
                 <h1 class="font-pf text-4xl text-gray-800">Review & Send</h1>
                 <p class="font-pf text-sm text-gray-700 leading-snug">
                     Check the details below, then authorize to send them to your <strong>EUDI Wallet</strong>.

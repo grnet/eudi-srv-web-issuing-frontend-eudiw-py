@@ -1,0 +1,177 @@
+/*
+ * GRNET: the demo's branding for the issuer's pages, laid over upstream's
+ * stylesheets so that those stay unchanged. Link it after them.
+ *
+ * Colours are gov.gr's (guide.services.gov.gr/docs/brand): #003476 primary,
+ * #00AEEF secondary. Only colours and surfaces change here; fonts and layout
+ * are upstream's.
+ */
+
+:root {
+    --grnet-primary: #003476;
+    --grnet-primary-dark: #00285c;
+    --grnet-accent: #00aeef;
+    --grnet-tint: #e6eef7;
+    --grnet-ring: rgba(0, 174, 239, .45);
+    --grnet-surface: #f6f8fc;
+    --grnet-line: #dfe3eb;
+    --grnet-fg: #1b1f24;
+    --grnet-muted: #57606a;
+}
+
+/* The header: the EUDI Wallet logo and gov.gr BETA side by side. */
+
+.grnet-brand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+}
+
+.grnet-brand img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Pages on upstream's EU Login styles (Bootstrap) */
+
+body,
+#responsive-main-nav1 {
+    background: var(--grnet-surface);
+    filter: none;
+}
+
+.main-header {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--grnet-line);
+}
+
+.main-header .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.eu-login,
+h1,
+h2,
+h3 {
+    color: var(--grnet-fg);
+}
+
+a {
+    color: var(--grnet-primary);
+}
+
+a:hover,
+a:focus {
+    color: var(--grnet-primary-dark);
+}
+
+.content-wrap,
+.content-wrap1,
+.content-wrap:hover {
+    background: #fff;
+    border: 1px solid var(--grnet-line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, .06);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--grnet-primary);
+}
+
+.btn-primary,
+.btn-primary:active,
+.btn-primary.active {
+    color: #fff;
+    background: var(--grnet-primary);
+    border-color: var(--grnet-primary);
+}
+
+.btn-primary:hover {
+    color: #fff;
+    background-color: var(--grnet-primary-dark);
+    border-color: var(--grnet-primary-dark);
+}
+
+.btn-primary:focus,
+.btn-primary.focus {
+    background-color: var(--grnet-primary) !important;
+    border-color: var(--grnet-accent) !important;
+}
+
+.btn-default {
+    color: var(--grnet-primary);
+}
+
+/* gov.gr's footer: the primary colour under a thin line of the secondary. */
+
+body {
+    margin-bottom: 96px;
+}
+
+.main-footer {
+    min-height: 0;
+    background: var(--grnet-primary);
+    border-top: 4px solid var(--grnet-accent);
+}
+
+.grnet-footer-note {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+/* Pages on Tailwind: the same colours instead of Tailwind's blue and indigo. */
+
+body.bg-gray-50 {
+    background-color: var(--grnet-surface);
+}
+
+.bg-blue-900,
+.bg-indigo-600 {
+    background-color: var(--grnet-primary);
+}
+
+.hover\:bg-blue-800:hover {
+    background-color: var(--grnet-primary-dark);
+}
+
+.text-indigo-600 {
+    color: var(--grnet-primary);
+}
+
+.hover\:text-indigo-800:hover {
+    color: var(--grnet-primary-dark);
+}
+
+.focus\:ring-indigo-500:focus,
+.focus-visible\:ring-blue-300:focus-visible,
+.peer:focus-visible ~ .peer-focus-visible\:ring-indigo-300 {
+    --tw-ring-color: var(--grnet-ring);
+}
+
+.peer:checked ~ .peer-checked\:border-indigo-600,
+.peer\/port1:checked ~ .peer-checked\/port1\:border-indigo-600,
+.peer\/port2:checked ~ .peer-checked\/port2\:border-indigo-600,
+.peer\/portupload:checked ~ .peer-checked\/portupload\:border-indigo-600,
+.peer\/sig1:checked ~ .peer-checked\/sig1\:border-indigo-600,
+.peer\/sigupload:checked ~ .peer-checked\/sigupload\:border-indigo-600,
+.group:has(:checked) .group-has-\[\:checked\]\:border-indigo-600 {
+    border-color: var(--grnet-primary);
+}
+
+.peer:checked ~ .peer-checked\:bg-indigo-600 {
+    background-color: var(--grnet-primary);
+}
+
+.peer:checked ~ .peer-checked\:bg-indigo-50 {
+    background-color: var(--grnet-tint);
+}
+
+.peer:checked ~ .peer-checked\:ring-indigo-200 {
+    --tw-ring-color: var(--grnet-tint);
+}

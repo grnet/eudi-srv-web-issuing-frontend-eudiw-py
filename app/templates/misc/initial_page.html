@@ -15,6 +15,7 @@
     <link href="{{ url_for('static', filename='bootstrap-3.4.1-dist/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ url_for('static', filename='css/stylesheets/custom/custom_en_9.7.1.20.1679559965505.css') }}" media="all" rel="stylesheet" type="text/css" />
     <link href="{{ url_for('static', filename='fontawesome-free-5.15.4-web/css/fontawesome.min.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ url_for('static', filename='css/grnet.css') }}" rel="stylesheet" type="text/css" />
     <script type="text/javascript" id="jqueryId" src="{{ url_for('static', filename='scripts/jquery/jquery-3.6.3.min.js') }}" charset="UTF-8"></script>
 
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/promiz/promiz-1.0.6.js') }}" charset="UTF-8"></script>
@@ -40,7 +41,7 @@
     <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/locval/locval_en_9.7.1.20.1679559965505.js" integrity="sha256-fGdBvjTPjOPZBmgDo8xMKgZUwmXXCzYZ+BbHErfhc/Q= sha384-Y9eAdYjT/TZ0VPUxw3Ex/TVSZZzPsV1mRoKD0BTkrQn0L615z24j26O2CZdT1Xl+ sha512-T9HoOOy1OkJ0l1GWqvT2RAR9frKd4zImDm1uyHxjmB/nxNBhmdjEhR9MckiWiNv2/UrFrMZJwSMB4Po/ExbFOw==" charset="UTF-8"></script>
 -->
 
-    <title>EUDIW Testing Issuer</title>
+    <title>gov.gr BETA Demo Issuer</title>
 </head>
 
 <body id="responsive-main-nav">
@@ -54,7 +55,10 @@
         <header role="banner" class="main-header">
             <div class="container">
                 <div class="row">
-                    <img src="{{url_for('static', filename='logo_gov_gr_pos_cropped.png')}}" style="max-width:200px; height:auto;">
+                    <div class="grnet-brand">
+                        <img src="{{url_for('static', filename='ic-logo.svg')}}" alt="EU Digital Identity Wallet" width="123" height="40">
+                        <img src="{{url_for('static', filename='logo_govgr_beta_pos.svg')}}" alt="gov.gr beta" width="173" height="52">
+                    </div>
                 </div>
             </div>
         </header>
@@ -66,14 +70,14 @@
                     <!--
                     <p class="relying-party"><strong>etranslation</strong> requires you to authenticate</p>
                     -->
-                    <h1>Gov.gr Testing Issuer</h1>
+                    <h1>gov.gr BETA Demo Issuer</h1>
                     <div id="content" class="content-wrap content-center col-md-6 col-sm-7">
 
                         <div class="genericErrors" id="genericErrorsDesc">
 
                         </div>
                             <!-- <status>EID_COUNTRY_SELECTION</status> -->
-                            <p> This is a EUDIW Testing Issuer supporting PID and mDL in mDoc and SD-JWT VC format at the following OID4VCI url: <a href={{oidc}}>{{oidc}}</a></p>
+                            <p> This is the demo issuer of GRNET's EUDI Wallet demo, supporting PID and mDL in mDoc and SD-JWT VC format at the following OID4VCI url: <a href={{oidc}}>{{oidc}}</a></p>
                             <p> Credential Offer url: <a href={{service_url}}/credential_offer>{{service_url}}/credential_offer</a></p>
                             <p> Issuer repository can be found at: <a href=https://github.com/eu-digital-identity-wallet/eudi-srv-web-issuing-eudiw-py>https://github.com/eu-digital-identity-wallet/eudi-srv-web-issuing-eudiw-py</a></p>
                             <p> Revocation repository can be found at: <a href=https://github.com/eu-digital-identity-wallet/eudi-srv-statuslist-py>https://github.com/eu-digital-identity-wallet/eudi-srv-statuslist-py</a></p>
@@ -95,6 +99,7 @@
     <footer class="main-footer container-fluid" role="contentinfo">
         <div class="container">
             <div class="row">
+                <p class="grnet-footer-note"><strong>Demo services - Test data only.</strong> Operated by GRNET.</p>
                 <!-- <div class="clearfix col-sm-8">
 
                     <ul class="eu-login-link">

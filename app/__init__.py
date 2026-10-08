@@ -280,7 +280,7 @@ def setup_metadata():
     openid_metadata["issuer"] = CONFIGURATION['service_url']
     openid_metadata["pushed_authorization_request_endpoint"] = f"{CONFIGURATION['service_url']}/pushed_authorization"
     oidc_metadata["credential_issuer"] = CONFIGURATION['service_url']
-    oidc_metadata["display"][0]["logo"]["uri"] = f"{CONFIGURATION['service_url']}/ic-logo.png"
+    oidc_metadata["display"][0]["logo"]["uri"] = f"{CONFIGURATION['service_url']}/static/issuer_logo_govgr_beta.png"
 
 
     metadata_signing_endpoint = f"{CONFIGURATION['backend_url']}/metadata/metadata_signer"
