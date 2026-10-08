@@ -15,6 +15,8 @@
   </defs>
   <rect width="856" height="540" rx="36" fill="url(#bg)"/>
   <rect width="856" height="540" rx="36" fill="url(#sheen)"/>
+  <!-- issuer name -->
+  <text x="784" y="104" text-anchor="end" fill="#FFFFFF" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" font-size="44" letter-spacing="5">PARTNER BANK</text>
   <!-- chip -->
   <rect x="72" y="176" width="112" height="86" rx="14" fill="url(#chip)"/>
   <path d="M72 219h112M128 176v86M100 176v86M156 176v86" stroke="#9C7F45" stroke-width="3" fill="none" opacity="0.7"/>
