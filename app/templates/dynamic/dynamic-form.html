@@ -403,9 +403,10 @@ pattern="{{ p }}" title="Format: {{ p }}"
         // It clones the first item of the list, updates indices, and returns it.
         function cloneAndPrepareListItem(templateNode, newIndex, namePrefix) {
             const clone = templateNode.cloneNode(true);
-            // A new item starts with one entry in each of its own lists
+            // A new item starts with one entry in each of its own lists, counted from there
             clone.querySelectorAll('.list-items-wrapper').forEach(wrapper => {
                 Array.from(wrapper.querySelectorAll(':scope > .list-item')).slice(1).forEach(item => item.remove());
+                delete wrapper.dataset.nextIndex;
             });
             clone.querySelectorAll('.list-string-items-wrapper').forEach(wrapper => {
                 Array.from(wrapper.querySelectorAll(':scope > .list-string-item')).slice(1).forEach(item => item.remove());
@@ -474,7 +475,11 @@ pattern="{{ p }}" title="Format: {{ p }}"
                     const button = event.target;
                     const listContainer = button.closest('.list-container');
                     const wrapper = listContainer.querySelector('.list-items-wrapper');
-                    const newIndex = wrapper.querySelectorAll(':scope > .list-item').length;
+                    // Count up: after a Remove, the number of items is an index still in
+                    // use, and reusing it would overwrite that item. The unused indexes a
+                    // Remove leaves are dropped by the backend.
+                    const newIndex = Number(wrapper.dataset.nextIndex || wrapper.querySelectorAll(':scope > .list-item').length);
+                    wrapper.dataset.nextIndex = newIndex + 1;
 
                     const templateItem = wrapper.querySelector('.list-item');
                     if (!templateItem) return;
