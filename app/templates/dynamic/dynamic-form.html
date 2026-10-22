@@ -456,10 +456,12 @@ pattern="{{ p }}" title="Format: {{ p }}"
                 const control = scope && scope.querySelector(
                     `[name$="[${rule.attribute}]"], [name="${rule.attribute}"]`);
                 const used = !!control && rule.values.includes(control.value);
-                // Fields of a group that is not chosen stay disabled
-                const unchosen = row.closest('.sub-container.hidden') !== null;
                 row.classList.toggle('hidden', !used);
-                row.querySelectorAll('input, select, button').forEach(el => el.disabled = !used || unchosen);
+                // Fields of a group that is not chosen stay disabled, wherever that
+                // choice is: around the row or inside it
+                row.querySelectorAll('input, select, button').forEach(el => {
+                    el.disabled = !used || el.closest('.sub-container.hidden') !== null;
+                });
             });
         }
 
@@ -575,8 +577,10 @@ pattern="{{ p }}" title="Format: {{ p }}"
                     }
                 }
 
-                // Optional attributes added or removed may control conditional fields
-                syncUsedIf(document);
+                // Optional attributes added or removed may control conditional fields.
+                // After the click's other handlers (the optional attributes' add and
+                // remove), which run after this one.
+                setTimeout(() => syncUsedIf(document), 0);
             });
 
             // Initialize choice-based sections and conditional fields on page load
