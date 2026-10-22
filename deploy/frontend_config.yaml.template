@@ -53,3 +53,10 @@ credentials_supported:
     # WE BUILD SCA attestations, for the PA2 payment demo
     - "eu.webuildconsortium.sca.user_mdoc"
     - "eu.webuildconsortium.sca.card_dpc_sd_jwt"
+    - "eu.webuildconsortium.sca.iban_mdoc"
+    - "eu.webuildconsortium.sca.iban_sd_jwt"
+    # WE BUILD attestations (rulebooks catalog)
+    - "eu.webuildconsortium.iban_ov_sd_jwt"
+    - "eu.webuildconsortium.eucc_sd_jwt"
+    - "eu.webuildconsortium.ereceipt_sd_jwt"
+    - "eu.webuildconsortium.eu_poa_sd_jwt"
