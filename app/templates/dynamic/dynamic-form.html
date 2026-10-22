@@ -24,6 +24,15 @@
 
 {% from "dynamic/_payment_card.html" import card_visual %}
 
+{# An input pattern: HTML matches it against the whole value, so without the anchors #}
+{% macro pattern_attribute(attr) -%}
+{%- if attr.pattern -%}
+{%- set p = attr.pattern[1:] if attr.pattern.startswith('^') else attr.pattern -%}
+{%- set p = p[:-1] if p.endswith('$') else p -%}
+pattern="{{ p }}" title="Format: {{ p }}"
+{%- endif -%}
+{%- endmacro %}
+
 {# =================================================================================== #}
 {# RECURSIVE MACRO TO RENDER FORM ATTRIBUTES #}
 {# =================================================================================== #}
@@ -57,27 +66,46 @@
         </div>
     </fieldset>
 
-    {# Dropdown Select Menu #}
-    {% elif attr.options is defined and attr.options %}
+    {# Multiple choice from a closed list: one or more values, sent as an array #}
+    {% elif attr.options is defined and attr.options and attr.type == 'list_string' %}
     <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ name | replace('_', ' ') | title }}</label>
-        <select name="{{ current_name }}"
-            class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500">
+        <p class="text-xs text-gray-500 mb-1">Hold Ctrl (Cmd on a Mac) to choose more than one.</p>
+        <select name="{{ current_name }}[]" multiple size="{{ [attr.options | length, 6] | min }}"
+            class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
+            {% if attr.get('mandatory') %}required{% endif %}>
             {% for option in attr.options %}
             <option value="{{ option }}">{{ option }}</option>
             {% endfor %}
         </select>
     </div>
 
-    {# Simple Input Types (string, date, number) #}
-    {% elif attr.type in ['string', 'full-date', 'uint'] or name == 'user_pseudonym' %}
+    {# Dropdown Select Menu #}
+    {% elif attr.options is defined and attr.options %}
     <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ name | replace('_', ' ') | title }}</label>
-        <input type="{{ 'date' if attr.type == 'full-date' else 'number' if attr.type == 'uint' else 'text' }}"
+        <select name="{{ current_name }}"
+            class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
+            {% if attr.get('mandatory') %}required{% endif %}>
+            {# An optional value can be left out #}
+            {% if not attr.get('mandatory') %}<option value="">Not provided</option>{% endif %}
+            {% for option in attr.options %}
+            <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {# Simple Input Types (string, date, date-time, number) #}
+    {% elif attr.type in ['string', 'full-date', 'date-time', 'uint', 'int', 'number'] or name == 'user_pseudonym' %}
+    {% set input_types = {'full-date': 'date', 'date-time': 'datetime-local', 'uint': 'number', 'int': 'number', 'number': 'number'} %}
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ name | replace('_', ' ') | title }}</label>
+        <input type="{{ input_types.get(attr.type, 'text') }}"
             class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
             name="{{ current_name }}" value="{{ attr.filled_value if attr.filled_value is not none else '' }}" {% if
             attr.filled_value or name=='user_pseudonym' %}readonly{% endif %} {% if attr.get('mandatory') %}required{%
-            endif %} {% if attr.type=='uint' %}min="0" {% endif %}>
+            endif %} {% if attr.type=='uint' %}min="0" {% endif %} {% if attr.type=='number' %}step="any" {% endif %}
+            {{ pattern_attribute(attr) }}>
     </div>
 
     {# Boolean (Toggle Switch) #}
@@ -103,7 +131,7 @@
                     name="{{ current_name }}[]" 
                     class="flex-1 p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
                     placeholder="Enter {{ name | replace('_', ' ') }}"
-                    {% if attr.get('mandatory') %}required{% endif %}>
+                    {% if attr.get('mandatory') %}required{% endif %} {{ pattern_attribute(attr) }}>
             </div>
         </div>
         
@@ -421,6 +449,14 @@
                             &times;
                         </button>
                     `;
+                    // Same input pattern as the first item, if it has one
+                    const firstInput = wrapper.querySelector('.list-string-item input');
+                    const newInput = newItem.querySelector('input');
+                    ['pattern', 'title'].forEach(attribute => {
+                        if (firstInput && firstInput.hasAttribute(attribute)) {
+                            newInput.setAttribute(attribute, firstInput.getAttribute(attribute));
+                        }
+                    });
                     wrapper.appendChild(newItem);
                 }
 
