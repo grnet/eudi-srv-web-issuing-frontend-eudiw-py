@@ -37,8 +37,10 @@ pattern="{{ p }}" title="Format: {{ p }}"
 {# RECURSIVE MACRO TO RENDER FORM ATTRIBUTES #}
 {# =================================================================================== #}
 {% macro render_attribute(name, attr, is_optional=false, name_prefix='') %}
-<div class="dynamic-attribute-row" data-attr-name="{{ name }}">
+{# A claim used only when a sibling has given values (used_if) is shown, enabled and required only then #}
+<div class="dynamic-attribute-row" data-attr-name="{{ name }}" {% if attr.used_if %}data-used-if='{{ attr.used_if | tojson | safe }}'{% endif %}>
     {% set current_name = name_prefix + ('[{}]'.format(name) if name_prefix else name) %}
+    {% set required = attr.get('mandatory') or attr.get('used_if') %}
 
 
     {# Payment card choice: one radio button per card, shown by its card art #}
@@ -73,11 +75,19 @@ pattern="{{ p }}" title="Format: {{ p }}"
         <p class="text-xs text-gray-500 mb-1">Hold Ctrl (Cmd on a Mac) to choose more than one.</p>
         <select name="{{ current_name }}[]" multiple size="{{ [attr.options | length, 6] | min }}"
             class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
-            {% if attr.get('mandatory') %}required{% endif %}>
+            {% if required %}required{% endif %}>
             {% for option in attr.options %}
             <option value="{{ option }}">{{ option }}</option>
             {% endfor %}
         </select>
+        {# A free value besides the listed ones, sent in the same list, when a sibling allows it (e.g. limitation details) #}
+        {% if attr.other_values %}
+        <div class="mt-2" data-used-if='{{ attr.other_values.used_if | tojson | safe }}'>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ attr.other_values.label }}</label>
+            <input type="text" name="{{ current_name }}[]" required
+                class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        {% endif %}
     </div>
 
     {# Dropdown Select Menu #}
@@ -86,9 +96,9 @@ pattern="{{ p }}" title="Format: {{ p }}"
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ name | replace('_', ' ') | title }}</label>
         <select name="{{ current_name }}"
             class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
-            {% if attr.get('mandatory') %}required{% endif %}>
+            {% if required %}required{% endif %}>
             {# An optional value can be left out #}
-            {% if not attr.get('mandatory') %}<option value="">Not provided</option>{% endif %}
+            {% if not required %}<option value="">Not provided</option>{% endif %}
             {% for option in attr.options %}
             <option value="{{ option }}">{{ option }}</option>
             {% endfor %}
@@ -103,7 +113,7 @@ pattern="{{ p }}" title="Format: {{ p }}"
         <input type="{{ input_types.get(attr.type, 'text') }}"
             class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
             name="{{ current_name }}" value="{{ attr.filled_value if attr.filled_value is not none else '' }}" {% if
-            attr.filled_value or name=='user_pseudonym' %}readonly{% endif %} {% if attr.get('mandatory') %}required{%
+            attr.filled_value or name=='user_pseudonym' %}readonly{% endif %} {% if required %}required{%
             endif %} {% if attr.type=='uint' %}min="0" {% endif %} {% if attr.type=='number' %}step="any" {% endif %}
             {{ pattern_attribute(attr) }}>
     </div>
@@ -131,7 +141,7 @@ pattern="{{ p }}" title="Format: {{ p }}"
                     name="{{ current_name }}[]" 
                     class="flex-1 p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500"
                     placeholder="Enter {{ name | replace('_', ' ') }}"
-                    {% if attr.get('mandatory') %}required{% endif %} {{ pattern_attribute(attr) }}>
+                    {% if required %}required{% endif %} {{ pattern_attribute(attr) }}>
             </div>
         </div>
         
@@ -168,20 +178,29 @@ pattern="{{ p }}" title="Format: {{ p }}"
             {% else %}
             <div class="list-item border-l-4 border-gray-300 pl-4">
 
-                {% if name == 'places_of_work' %}
                 {# Prepare a unified 'options' list from either dict (mdoc) or list (sd-jwt) structure #}
                 {% if attr.attributes is mapping %}
-                {% set options = attr.attributes.items() %}
+                {% set options = attr.attributes.items() | list %}
                 {% else %}
                 {% set options = [] %}
                 {% for item in attr.attributes %}{% for key, value in item.items() %}{% set _ = options.append((key,
                 value)) %}{% endfor %}{% endfor %}
                 {% endif %}
+                {# A choice: the attributes exclude each other (not_used_if), e.g. a natural or a legal person #}
+                {% set choice = namespace(is_choice=(name == 'places_of_work')) %}
+                {% if not choice.is_choice and options | length > 1 %}
+                {% set choice.is_choice = true %}
+                {% for option_name, option_attr in options %}
+                {% if option_attr is not mapping or not option_attr.get('not_used_if') %}{% set choice.is_choice = false %}{% endif %}
+                {% endfor %}
+                {% endif %}
 
+                {% if choice.is_choice %}
                 <div class="flex flex-wrap gap-2 toggle-group mb-4">
                     {% for option_name, option_attr in options %}
                     <label class="toggle-option cursor-pointer">
-                        <input type="radio" name="{{ current_name }}_option" value="{{option_name}}"
+                        {# Named per list item, so each item of a repeated list has its own choice #}
+                        <input type="radio" name="{{ current_name }}[0]_option" value="{{option_name}}"
                             class="sr-only peer" data-option-name="{{option_name}}" {% if loop.first %}checked{% endif
                             %}>
                         <div
@@ -370,16 +389,31 @@ pattern="{{ p }}" title="Format: {{ p }}"
     </div>
 
     <script>
+        // The index of an item is the one right after the name of its own list
+        // (namePrefix), not the first one in the name: in a nested list,
+        // products[0][vats][0][vat_rate] becomes products[0][vats][1][vat_rate].
+        function reindexName(name, namePrefix, newIndex) {
+            if (namePrefix && name.startsWith(namePrefix + '[')) {
+                return namePrefix + name.slice(namePrefix.length).replace(/^\[\d+\]/, `[${newIndex}]`);
+            }
+            return name.replace(/\[\d+\]/, `[${newIndex}]`);
+        }
+
         // Helper function to generate HTML for a new list item recursively.
-        // It clones the first item from a hidden template, updates indices, and returns it.
+        // It clones the first item of the list, updates indices, and returns it.
         function cloneAndPrepareListItem(templateNode, newIndex, namePrefix) {
             const clone = templateNode.cloneNode(true);
+            // A new item starts with one entry in each of its own lists
+            clone.querySelectorAll('.list-items-wrapper').forEach(wrapper => {
+                Array.from(wrapper.querySelectorAll(':scope > .list-item')).slice(1).forEach(item => item.remove());
+            });
+            clone.querySelectorAll('.list-string-items-wrapper').forEach(wrapper => {
+                Array.from(wrapper.querySelectorAll(':scope > .list-string-item')).slice(1).forEach(item => item.remove());
+            });
             clone.querySelectorAll('input, select').forEach(input => {
                 const oldName = input.getAttribute('name');
                 if (oldName) {
-                    // This regex replaces the first number in brackets e.g., name[0] -> name[1]
-                    const newName = oldName.replace(/\[\d+\]/, `[${newIndex}]`);
-                    input.setAttribute('name', newName);
+                    input.setAttribute('name', reindexName(oldName, namePrefix, newIndex));
                 }
                 // Reset values for the new item
                 if (input.type === 'checkbox' || input.type === 'radio') {
@@ -388,7 +422,44 @@ pattern="{{ p }}" title="Format: {{ p }}"
                     input.value = '';
                 }
             });
+            // The add buttons of the item's own lists add to the new item's lists
+            clone.querySelectorAll('.add-item[data-name-prefix]').forEach(button => {
+                button.dataset.namePrefix = reindexName(button.dataset.namePrefix, namePrefix, newIndex);
+            });
+            clone.querySelectorAll('.add-string-item[data-current-name]').forEach(button => {
+                button.dataset.currentName = reindexName(button.dataset.currentName, namePrefix, newIndex);
+            });
             return clone;
+        }
+
+        // Choices between groups (e.g. a natural or a legal person): show and
+        // enable the chosen group, the first one if none is chosen yet.
+        function initChoices(root) {
+            root.querySelectorAll('.toggle-group').forEach(group => {
+                const radio = group.querySelector('input[type="radio"]:checked') || group.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('click', { bubbles: true }));
+                }
+            });
+        }
+
+        // used_if: a field is shown, enabled and required only while a sibling
+        // field has one of the given values (e.g. given_name for owner_type person).
+        // The sibling is looked up in the same list item, or in the form for
+        // top-level claims; while it is not in the form, the field is not used.
+        function syncUsedIf(root) {
+            root.querySelectorAll('[data-used-if]').forEach(row => {
+                const rule = JSON.parse(row.dataset.usedIf);
+                const scope = row.parentElement.closest('.list-item') || row.closest('form');
+                const control = scope && scope.querySelector(
+                    `[name$="[${rule.attribute}]"], [name="${rule.attribute}"]`);
+                const used = !!control && rule.values.includes(control.value);
+                // Fields of a group that is not chosen stay disabled
+                const unchosen = row.closest('.sub-container.hidden') !== null;
+                row.classList.toggle('hidden', !used);
+                row.querySelectorAll('input, select, button').forEach(el => el.disabled = !used || unchosen);
+            });
         }
 
 
@@ -423,6 +494,8 @@ pattern="{{ p }}" title="Format: {{ p }}"
                     newItem.appendChild(removeBtn);
 
                     wrapper.appendChild(newItem);
+                    initChoices(newItem);
+                    syncUsedIf(newItem);
                 }
 
                 // --- Handle Removing an item from a list ---
@@ -477,13 +550,15 @@ pattern="{{ p }}" title="Format: {{ p }}"
                     const container = toggleOption.closest('.list-item');
                     const optionName = toggleOption.dataset.optionName;
 
-                    container.querySelectorAll('.sub-container').forEach(sc => {
+                    // Only this item's own groups; nested choices keep theirs
+                    container.querySelectorAll(':scope > .sub-container').forEach(sc => {
                         const isSelected = sc.dataset.optionName === optionName;
                         // Toggle visibility
                         sc.classList.toggle('hidden', !isSelected);
                         // Enable/disable inputs to ensure only selected data is submitted
                         sc.querySelectorAll('input, select, button').forEach(el => el.disabled = !isSelected);
                     });
+                    syncUsedIf(container);
                 }
 
                 const toggleInput = event.target.closest('.toggle-input');
@@ -494,14 +569,16 @@ pattern="{{ p }}" title="Format: {{ p }}"
                         hiddenInput.value = toggleInput.checked ? 'true' : 'false';
                     }
                 }
+
+                // Optional attributes added or removed may control conditional fields
+                syncUsedIf(document);
             });
 
-            // Initialize choice-based sections on page load
-            document.querySelectorAll('.toggle-group').forEach(group => {
-                const checkedRadio = group.querySelector('input[type="radio"]:checked');
-                if (checkedRadio) {
-                    checkedRadio.dispatchEvent(new Event('click', { bubbles: true }));
-                }
+            // Initialize choice-based sections and conditional fields on page load
+            initChoices(document);
+            syncUsedIf(document);
+            document.addEventListener('change', function () {
+                syncUsedIf(document);
             });
 
             // =======================================================
@@ -648,6 +725,21 @@ pattern="{{ p }}" title="Format: {{ p }}"
             if (form.dataset.submitting) return false;
             form.dataset.submitting = 'true';
             form.querySelector('button[type="submit"]').setAttribute('aria-busy', 'true');
+
+            // A datetime-local value is the user's local time, without an offset.
+            // Send it in UTC (RFC 3339, e.g. 2026-10-22T07:14:00Z) instead, as the
+            // credential carries it; the visible field keeps the local time.
+            form.querySelectorAll('input[type="datetime-local"]').forEach(input => {
+                if (!input.value || input.disabled || !input.name) return;
+                const utc = document.createElement('input');
+                utc.type = 'hidden';
+                utc.className = 'utc-date-time';
+                utc.name = input.name;
+                utc.value = new Date(input.value).toISOString().replace(/\.\d{3}Z$/, 'Z');
+                input.dataset.localName = input.name;
+                input.removeAttribute('name');
+                input.after(utc);
+            });
             return true;
         }
 
@@ -656,6 +748,11 @@ pattern="{{ p }}" title="Format: {{ p }}"
             const form = document.getElementById('selectCountryForm');
             delete form.dataset.submitting;
             form.querySelector('button[type="submit"]').removeAttribute('aria-busy');
+            form.querySelectorAll('.utc-date-time').forEach(utc => utc.remove());
+            form.querySelectorAll('input[data-local-name]').forEach(input => {
+                input.name = input.dataset.localName;
+                delete input.dataset.localName;
+            });
         });
 
         // Make functions globally accessible for inline event handlers
