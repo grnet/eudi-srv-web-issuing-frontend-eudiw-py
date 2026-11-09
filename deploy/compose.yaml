@@ -25,6 +25,9 @@ services:
       # /app exists in the image; /etc/issuer_config does not, and compose
       # writes config content into the container rather than creating parents.
       ISSUER_CONFIG_PATH: /app/frontend_config.yaml
+      # Unused by the app: compose does not recreate a container when only a
+      # config's content changes, but it does when its environment does.
+      FRONTEND_CONFIG_SHA256: ${FRONTEND_CONFIG_SHA256:?set by the deploy workflow}
     configs:
       - source: frontend-config
         target: /app/frontend_config.yaml

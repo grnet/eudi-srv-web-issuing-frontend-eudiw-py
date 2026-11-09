@@ -15,11 +15,12 @@ service: `base_url` for the browser and `internal_url` for the issuer's
 server-to-server calls. Co-locating them is what makes the internal one
 meaningful.
 
-The frontend has no such pair. It makes three server-side calls, two to the
-issuer at startup (`/.well-known/openid-credential-issuer` and
-`/metadata/metadata_signer`) and one to the OIDC server per request
-(`/pushed_authorization`, proxied in `app/auth_redirect.py`), and every one of
-them works fine over the public URL. Nothing calls the frontend except a browser.
+The frontend has no such pair. Since 0.11.0 it makes two server-side calls, both
+to the issuer at startup (`/metadata/<frontend id>` and `/metadata/<frontend id>/signed`,
+with the API key), and both work fine over the public URL. Until 0.11.0 it also
+proxied wallets' `/pushed_authorization` to the OIDC server; that is gone, as
+wallets now talk to the authorization server directly. Nothing calls the
+frontend except a browser and a wallet.
 
 It also has no database, no volumes and no init container, so there is nothing to
 share. Talking to the backend over HTTPS is also the honest configuration: it is
@@ -27,23 +28,24 @@ what a deployment would look like if the frontend ran on a different host.
 
 Two consequences accepted deliberately:
 
-`setup_metadata()` calls the backend at **import time**, so if the issuer is down
-the frontend crashes on start. `restart: unless-stopped` retries, and the
-`9c9b5c1` fix carried on `grnet` makes the fallback path work instead of raising
-`UnboundLocalError`. That fix matters more here than it would in a coupled stack.
+`setup_metadata()` calls the backend at **startup**, so if the issuer is down, or
+refuses the API key, the frontend fails to start. `restart: unless-stopped`
+retries. The Deploy workflow checks the metadata answers, which it only does
+when the key matched.
 
-The PAR proxy hairpins: browser to proxy to frontend, back out through the proxy
-to the OIDC server. One extra local hop, not a correctness problem.
+**Versions go together.** A 0.11.0 frontend needs a 0.11.0 issuer, which
+serves `/metadata/<frontend id>`, and a 0.11.0 issuer refuses an older frontend,
+which sends no key. Deploy both at once.
 
 ## Repository secrets
 
 | Secret | What it is |
 | --- | --- |
 | `SSH_KEY` | Private key authorised for `ubuntu@3.69.83.252`. Written to `~/.ssh/eudiw-deploy` on the runner. |
+| `ISSUER_BACKEND_API_KEY` | Since 0.11.0: the `X-Api-Key` the frontend loads its metadata with (`backend_api_key`). The same value as the issuer repository's secret of the same name; set both from one value, see the issuer's `deploy/README.md`. |
 
-That is all. The frontend has no credentials of its own: the three URLs and the
-frontend id in `stack.env` are public, which is why the config template is
-committed.
+Everything else is public: the URLs and the frontend id in `stack.env`, which is
+why the config template is committed with a placeholder for the key.
 
 ## Routing
 
@@ -97,8 +99,8 @@ Neither emits a single absolute `/static/` reference.
 ### It needs the discovery rewrite too
 
 The frontend serves `/.well-known/<service>` under **its own identity**: it
-fetches signed metadata from the issuer's `/metadata/metadata_signer` at startup
-and republishes it. So it is a credential issuer for discovery purposes, not just
+loads its metadata, signed and unsigned, from the issuer at startup and
+republishes it. So it is a credential issuer for discovery purposes, not just
 a UI.
 
 That means RFC 8414 applies to it as it does to the issuer and the OIDC server: a
@@ -106,13 +108,15 @@ client asking about `https://host/frontend` fetches
 `https://host/.well-known/openid-credential-issuer/frontend`, which lands at the
 host root where the status list is.
 
-It is also **its own authorization server**, as upstream designed it: its
-credential issuer metadata has no `authorization_servers`, and its AS metadata
-says `issuer = https://host/frontend`, with PAR served here and authorization
-and token delegated to the OIDC server at `/issuer/oidc/`. So a wallet also
-fetches `https://host/.well-known/oauth-authorization-server/frontend`, and the
-rule covers that and `openid-configuration` too. Until 2026-09-24 it covered
-only `openid-credential-issuer`, and that fetch was a 404.
+Until 0.11.0 it was also **its own authorization server**, proxying PAR to the
+OIDC server, and the rule covers `oauth-authorization-server` and
+`openid-configuration` for that reason. Since 0.11.0 its metadata names the OIDC
+server's per-frontend issuer in `authorization_servers`
+(`https://host/issuer/oidc/<frontend id>`), and those two paths answer 404 here.
+
+It also serves `jwt-vc-issuer` since 0.11.0. Its URL is the `iss` of the SD-JWT
+VCs, and a verifier that looks up the signing keys fetches
+`https://host/.well-known/jwt-vc-issuer/frontend`, so the rule covers that too.
 
 The rule lives in `eudi-srv-wallet-provider`'s deploy compose, mounted at
 `/etc/nginx/vhost.d/demo.eudiw.grnet.gr`, and proxies to
@@ -123,8 +127,8 @@ hash there:
 
 ## Configuration
 
-`app/__init__.py:58` reads `ISSUER_CONFIG_PATH` and `yaml.safe_load`s the file
-with no variable expansion, so substitution happens on the runner.
+The app reads `ISSUER_CONFIG_PATH` and `yaml.safe_load`s the file with no
+variable expansion, so substitution happens on the runner.
 `deploy/frontend_config.yaml.template` is rendered with `envsubst` and passed to
 compose, which mounts it at `/app/frontend_config.yaml`.
 
@@ -132,17 +136,21 @@ compose, which mounts it at `/app/frontend_config.yaml`.
 container at create time and does not create parent directories, so the
 destination has to exist in the image.
 
+Since 0.11.0 the config has no `credentials_supported` and no `oauth_url`. The
+issuer decides which credentials this frontend advertises
+(`frontends_config.<id>.credentials_supported` in its config template, which
+took over this repository's list) and names the authorization server.
+
 ## Config changes need a recreate
 
-Compose does not recreate a container when only a config's content changes, so a
-change to `stack.env` or the template deploys without taking effect until the
-container is recreated. In the Deploy workflow, tick **Recreate containers even
-if nothing changed**.
+Compose does not recreate a container when only a config's content changes. So
+the deploy puts a hash of the rendered config in the container's environment
+(`FRONTEND_CONFIG_SHA256`), and a changed config recreates it. **Recreate
+containers even if nothing changed**, in the Deploy workflow, is for anything
+else, such as reloading the metadata after an issuer change.
 
 ## Still to sort
 
-- `FRONTEND_PUBLIC_URL` in the issuer's `stack.env` still points at the EU
-  reference instance. Repoint it once this is deployed and verified.
 - `e1799bb` on `deploy-okeanos-v8` swaps the `credential_request_encryption`
   public JWK for a GRNET one. Not carried: the matching private key is not in
   this repository, and advertising a key nobody holds is worse than advertising

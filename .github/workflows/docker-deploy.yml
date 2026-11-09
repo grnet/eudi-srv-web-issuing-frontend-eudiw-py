@@ -123,20 +123,31 @@ jobs:
       - name: Pull and roll
         env:
           FRONTEND_IMAGE: ${{ steps.image.outputs.image }}
+          # Since 0.11.0: the X-Api-Key the frontend loads its metadata with.
+          # The same value is the issuer repository's ISSUER_BACKEND_API_KEY.
+          ISSUER_BACKEND_API_KEY: ${{ secrets.ISSUER_BACKEND_API_KEY }}
         run: |
           set -euo pipefail
+
+          if [[ -z "${ISSUER_BACKEND_API_KEY:-}" ]]; then
+            echo "::error::repository secret ISSUER_BACKEND_API_KEY is not set; see deploy/README.md"
+            exit 1
+          fi
 
           set -a
           . deploy/stack.env
           set +a
 
           FRONTEND_CONFIG=$(envsubst < deploy/frontend_config.yaml.template)
-          export FRONTEND_CONFIG
           if printf '%s' "$FRONTEND_CONFIG" | grep -q '\${'; then
             echo "::error::unsubstituted variables remain in the frontend config"
             printf '%s' "$FRONTEND_CONFIG" | grep -n '\${'
             exit 1
           fi
+          # Compose does not recreate a container when only a config changes,
+          # but it does when its environment does.
+          FRONTEND_CONFIG_SHA256=$(printf '%s' "$FRONTEND_CONFIG" | sha256sum | cut -c1-64)
+          export FRONTEND_CONFIG FRONTEND_CONFIG_SHA256
 
           export COMPOSE_ENV_FILES=deploy/stack.env
 
@@ -188,8 +199,11 @@ jobs:
           }
 
           check /frontend/ 200
+          # The metadata, which the frontend loads from the backend with the
+          # API key at startup: a 200 here means the key matched.
+          check /frontend/.well-known/openid-credential-issuer 200
+          check /.well-known/openid-credential-issuer/frontend 200
           # Must not have shadowed what was already on this hostname.
-          check /issuer/.well-known/openid-credential-issuer 200
           check /wallet-provider/jwks 200
 
           [[ "$fail" -eq 0 ]] && echo "deploy verified" || { echo "verification failed"; exit 1; }

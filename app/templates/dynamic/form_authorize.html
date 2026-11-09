@@ -28,9 +28,10 @@
         charset="UTF-8"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/respond/respond-1.4.2.js') }}"
         charset="UTF-8"></script>
-    <meta name="referrer" content="no-referrer">
+    <meta name="referrer" content="strict-origin">
 
     <title>Confirm data from your EUDI Wallet</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/page-actions.js') }}" charset="UTF-8" defer="true"></script>
 </head>
 
 {% from "dynamic/_payment_card.html" import card_visual %}
@@ -75,10 +76,10 @@
 </div>
 
 {# It's an image #}
-{% elif name in ["portrait", "issuing_authority_logo", "signature_usual_mark_issuing_officer", "image"] %}
+{% elif name in image_attributes %}
 <div class="attribute-block py-3">
     <dt class="text-sm text-gray-500">{{ name | replace('_', ' ') | title }}</dt>
-    <dd><img class="mt-2 rounded-lg shadow-md w-32 h-32 object-cover" src="data:image/jpeg;base64,{{ value }}"
+    <dd><img class="mt-2 rounded-lg shadow-md h-32 max-w-full object-contain" src="data:image/jpeg;base64,{{ value }}"
             alt="{{ name | replace('_', ' ') | title }}"></dd>
 </div>
 
@@ -110,8 +111,7 @@
             </div>
 
             <!-- The Form -->
-            <form id="authForm" method="post" action="{{redirect_url}}" class="flex-grow flex flex-col"
-                onsubmit="return submitOnce()">
+            <form id="authForm" method="post" action="{{redirect_url}}" class="flex-grow flex flex-col">
 
                 <div class="space-y-4">
                     {% for category_name, attributes in presentation_data.items() %}
@@ -159,7 +159,7 @@
                         </button>
                         <button type="button" name="Cancelled"
                             class="w-full border border-gray-300 bg-white text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-200"
-                            onclick="window.history.back();">
+                            data-action="back">
                             Cancel
                         </button>
                     </div>
@@ -169,15 +169,18 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         // Submit once. The button stays enabled, so its name is still sent.
-        function submitOnce() {
-            const form = document.getElementById('authForm');
-            if (form.dataset.submitting) return false;
+        // A listener, not onsubmit: the page's CSP allows no inline handlers.
+        document.getElementById('authForm').addEventListener('submit', function (event) {
+            const form = event.currentTarget;
+            if (form.dataset.submitting) {
+                event.preventDefault();
+                return;
+            }
             form.dataset.submitting = 'true';
             form.querySelector('button[type="submit"]').setAttribute('aria-busy', 'true');
-            return true;
-        }
+        });
 
         // A page restored by the Back button can be submitted again.
         window.addEventListener('pageshow', function () {
