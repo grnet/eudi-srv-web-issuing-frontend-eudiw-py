@@ -93,7 +93,7 @@ jobs:
           echo "Testing $IMAGE"
 
           docker run --rm "$IMAGE" python3 -c "
-          import flask, requests, jsonschema, yaml
+          import flask, flask_cors, requests, yaml, concurrent_log_handler
           print('imports ok')
           "
           # The Node stage builds this; without it every page renders unstyled.
