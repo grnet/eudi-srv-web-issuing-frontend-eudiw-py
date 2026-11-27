@@ -86,5 +86,5 @@ def test_layout_carries_the_branding(client):
     assert r.status_code == 200
     html = r.get_data(as_text=True)
     assert "GRNET Demo Issuer" in html
-    assert "logo_govgr_beta_pos.svg" in html
+    assert "logo_grnet.png" in html
     assert "Demo services - Test data only." in html
